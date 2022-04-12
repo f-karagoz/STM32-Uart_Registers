@@ -1,44 +1,61 @@
-#include "stm32f746xx.h"
 #include "main.h"
+#include "RccConfig.h"
 
-void systemClockConfig(void) {
-	/*************>>>>>>> STEPS FOLLOWED <<<<<<<<************
-	1. ENABLE HSE and wait for the HSE to become Ready
-	2. Set the POWER ENABLE CLOCK and VOLTAGE REGULATOR
-	3. Configure the FLASH PREFETCH and the LATENCY Related Settings
-	4. Configure the PRESCALARS HCLK, PCLK1, PCLK2
-	5. Configure the MAIN PLL
-	6. Enable the PLL and wait for it to become ready
-	7. Select the Clock Source and wait for it to be set
-	********************************************************/
-	// 1. ENABLE HSE and wait for the HSE to become Ready
-	RCC->CR |= RCC_CR_HSEON; // RCC->CR |= (1<<16); // Set RCC's CR register's 16th bit to 1
-	while (!(RCC->CR & RCC_CR_HSERDY));
 
-	// 2. Set the POWER ENABLE CLOCK and VOLTAGE REGULATOR
-	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
-	PWR->CR1 |= PWR_CR1_VOS;
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+	systemClockConfig();
+	TIM6Config();
+	GPIO_Config();
+	while (1)
+	{
+		GPIOB->BSRR |= (1<<0);		// Set
+		delay_ms(1000);
+		GPIOB->BSRR |= (1<<16);		// Reset
+		delay_ms(1000);
+	}
+}
 
-	// 3. Configure the FLASH PREFETCH and the LATENCY Related Settings
-	FLASH->ACR |= FLASH_ACR_LATENCY_2WS; // Our MCU does not have cache settings
+void TIM6Config (void) {
+	/************** STEPS TO FOLLOW *****************
+	1. Enable Timer clock
+	2. Set the prescalar and the ARR
+	3. Enable the Timer, and wait for the update Flag to set
+	************************************************/
+	// 1. Enable Timer clock
+	RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
 
-	// 4. Configure the PRESCALARS HCLK, PCLK1, PCLK2
-	RCC->CFGR |= RCC_CFGR_HPRE_DIV1; 	// AHB PS Div 1
-	RCC->CFGR |= RCC_CFGR_PPRE1_DIV2; 	// APB1 PS Div 2
-	RCC->CFGR |= RCC_CFGR_PPRE2_DIV1; 	// APB2 PS Div 1
+	// 2. Set the prescalar and the ARR
+	// 72Mhz default value as now of the TIM6 we need to set a prescaler for 1Mhz
+	TIM6->PSC = 72-1; 	// +1 is added by default
+	TIM6->ARR = 0xFFFF;	// Max auto-reload value, so we can count higher
 
-	// 5. Configure the MAIN PLL
-	// PLLM=4	PLLN=72		PLLP=2(!)	PLLQ=3(did not use)
-	RCC->PLLCFGR |= (4<<0) | (72<<6) | (0<16);
-	RCC->PLLCFGR |= RCC_PLLCFGR_PLLSRC_HSE; // High speed external clock selected
+	// 3. Enable the Timer, and wait for the update Flag to set
+	TIM6->CR1 |= TIM_CR1_CEN;	// Enable the timer
+	while(!(TIM6->SR & TIM_SR_UIF));	// Wait for update flag
+}
 
-	// 6. Enable the PLL and wait for it to become ready
-	RCC->CR |= RCC_CR_PLLON;
-	while(!(RCC->CR & RCC_CR_PLLRDY)); 	// Wait for the PLL to get ready
+void delay_us (uint16_t us) {
+	/************** STEPS TO FOLLOW *****************
+	1. RESET the Counter
+	2. Wait for the Counter to reach the entered value. As each count will take 1 us,
+		 the total waiting time will be the required us delay
+	************************************************/
+	// 1. RESET the Counter
+	TIM6->CNT = 0x0000; // Reset the counter
 
-	// 7. Select the Clock Source and wait for it to be set
-	RCC->CFGR |= RCC_CFGR_SW_PLL;
-	while((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL);
+	// 2. Wait for the Counter to reach the entered value.
+	while(TIM6->CNT < us);
+}
+
+void delay_ms (uint16_t ms) {
+	for(uint16_t i=0; i<ms;i++ ) {
+		delay_us(1000);
+	}
 }
 
 void GPIO_Config (void) {
@@ -55,27 +72,8 @@ void GPIO_Config (void) {
 	GPIOB->MODER |= (1<<0);	// Set B0 as General purpose output mode. Bits 1:0 set as (01)
 
 	// 3. Configure the OUTPUT MODE
-	GPIOB->OTYPER |= (0<<0);
-	GPIOB->OSPEEDR |= (0<<0);
+	GPIOB->OTYPER |= (0<<0);	// Push-pull type for pin 0.
+	GPIOB->OSPEEDR |= (2<<0);	// High speed setup for pin 0
+	GPIOB->PUPDR &= ~((1<<1) | (1<<0)); // 1:0 set as (00) for pin 0 to be no pull up or down
 }
 
-void delay(uint32_t time) {
-	while(time--);
-}
-
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
-	systemClockConfig();
-	GPIO_Config();
-	while (1)
-	{
-		GPIOB->BSRR |= (1<<0);		// Set
-		delay(4000000);
-		GPIOB->BSRR |= (1<<16);	// Reset
-		delay(4000000);
-	}
-}
