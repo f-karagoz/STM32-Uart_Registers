@@ -11,6 +11,19 @@ extern "C" {
 #include "Delay.h"
 
 /**
+ * @brief Configures UART.
+ *
+ */
+void UartConfig (void);
+
+/**
+ * @brief Sends one char through USART3;
+ *
+ * @param c Actual char.
+ */
+void UART3_SendChar (uint8_t c);
+
+/**
  * @brief Configures the GPIO.
  *
  */
