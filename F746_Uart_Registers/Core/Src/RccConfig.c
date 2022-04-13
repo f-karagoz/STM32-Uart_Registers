@@ -35,7 +35,8 @@ void systemClockConfig(void) {
 
 	// 5. Configure the MAIN PLL
 	// PLLM=4	PLLN=72		PLLP=2(!)	PLLQ=3(did not use)
-	RCC->PLLCFGR |= (4<<0) | (72<<6) | (0<16);
+	RCC->PLLCFGR =0x00000000; // Reset the register. Default values prevent us to set correct values.
+	RCC->PLLCFGR |= (4<<0) | (72<<6) | (0<<16);
 	RCC->PLLCFGR |= RCC_PLLCFGR_PLLSRC_HSE; // High speed external clock selected
 
 	// 6. Enable the PLL and wait for it to become ready

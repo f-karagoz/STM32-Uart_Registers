@@ -15,8 +15,10 @@ int main(void)
 	{
 		GPIOB->BSRR |= (1<<0);		// Set
 		delay_ms(1000);
+		//delay_us(10000);
 		GPIOB->BSRR |= (1<<16);		// Reset
 		delay_ms(1000);
+		//delay_us(10000);
 	}
 }
 
@@ -46,7 +48,7 @@ void delay_us (uint16_t us) {
 		 the total waiting time will be the required us delay
 	************************************************/
 	// 1. RESET the Counter
-	TIM6->CNT = 0x0000; // Reset the counter
+	TIM6->CNT = 0x00000000U; // Reset the counter
 
 	// 2. Wait for the Counter to reach the entered value.
 	while(TIM6->CNT < us);
