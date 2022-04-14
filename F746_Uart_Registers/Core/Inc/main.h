@@ -24,6 +24,20 @@ void UartConfig (void);
 void UART3_SendChar (uint8_t c);
 
 /**
+ * @brief Sends char array.
+ *
+ * @param data Pointer to char array.
+ */
+void UART3_SendData (uint8_t * data);
+
+/**
+ * @brief Gets the char from UART.
+ *
+ * @return Read char data.
+ */
+uint8_t UART3_GetChar (void);
+
+/**
  * @brief Configures the GPIO.
  *
  */

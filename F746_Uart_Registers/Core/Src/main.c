@@ -10,16 +10,18 @@ int main(void)
 	UartConfig();
 	TIM6Config();
 	GPIO_Config();
-	uint8_t myChar = 0x43; //C
+	//uint8_t myChar = 'C';
+	uint8_t myArr[10] = "Hello\n\0";
 	while (1)
 	{
 		GPIOB->BSRR |= (1<<0);		// Set
-		delay_ms(1000);
-		//delay_us(10000);
+		delay_ms(500);
 		GPIOB->BSRR |= (1<<16);		// Reset
-		delay_ms(1000);
-		//delay_us(10000);
-		UART3_SendChar(myChar);
+		delay_ms(500);
+		//UART3_SendChar(myChar);
+		UART3_SendData(myArr);
+		uint8_t rxData = UART3_GetChar();
+
 	}
 }
 
@@ -74,6 +76,25 @@ void UART3_SendChar (uint8_t c) {
 		USART3->TDR = c;	// Load the char to be transmitted into TDR
 		while(!(USART3->ISR & USART_ISR_TC));	// Wait for Transmit Complete flag to be set in the ISR
 	}
+}
+
+void UART3_SendData (uint8_t * data) {	// The input of the function is the address of the char array
+	while (*data != '\0') {				// We will be looping until we find NULL char
+		UART3_SendChar(*data);			// We send the value pointed by the current address
+		(data)++;						// We increment the address by one for the next 8 bit
+	}
+}
+
+uint8_t UART3_GetChar (void) {
+	/*********** STEPS FOLLOWED *************
+	1. Wait for the RXNE bit to set. It indicates that the data has been received and can be read.
+	2. Read the data from USART_DR  Register. This also clears the RXNE bit
+	****************************************/
+
+	uint8_t data;
+	while (!(USART3->ISR & USART_ISR_RXNE)); // Wait for the RX Not Empty Flag to set. Which indicates that data can be read.
+	data = USART3->RDR;
+	return data;
 }
 
 void GPIO_Config (void) {
