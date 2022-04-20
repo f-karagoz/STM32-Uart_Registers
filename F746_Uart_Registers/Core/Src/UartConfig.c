@@ -7,8 +7,9 @@ void UartConfig (void) {
 	3. Program the M bit in USART_CR1 to define the word length.
 	4. Select the desired baud rate using the USART_BRR register.
 	5. Program the number of stop bits in USART_CR2.
-	6. Enable the USART by writing the UE bit in USART_CR1 register to 1.
-	7. Set the TE bit in USART_CR1 to send an idle frame as first transmission.
+	6. Enable TXE and RNE interrupts
+	7. Enable the USART by writing the UE bit in USART_CR1 register to 1.
+	8. Set the TE bit in USART_CR1 to send an idle frame as first transmission.
 	********************************/
 	// 1. Enable the UART CLOCK and GPIO CLOCK
 	RCC->APB1ENR |= RCC_APB1ENR_USART3EN;	// Enable USART3's clock
@@ -30,10 +31,15 @@ void UartConfig (void) {
 	// 5. Program the number of stop bits in USART_CR2.
 	USART3->CR2 &= ~USART_CR2_STOP; // For 1 stop bit (13:12) set as 0:0
 
-	// 6. Enable the USART by writing the UE bit in USART_CR1 register to 1.
+	// 6. Enable TXE and RNE interrupts
+	//USART3->CR1 |= USART_CR1_TXEIE | USART_CR1_RXNEIE;	// Enable interrupts on the config register so that they genererate interrupt
+	USART3->CR1 |= USART_CR1_RXNEIE;
+	NVIC_EnableIRQ(USART3_IRQn);	// Enable the USART3 interrupts on NVIC line
+
+	// 7. Enable the USART by writing the UE bit in USART_CR1 register to 1.
 	USART3->CR1 |= USART_CR1_UE;	// Enable USART
 
-	// 7. Set the TE bit in USART_CR1 to send an idle frame as first transmission.
+	// 8. Set the TE bit in USART_CR1 to send an idle frame as first transmission.
 	USART3->CR1 |= USART_CR1_TE | USART_CR1_RE;	// Enable Transmit and Receive
 
 }

@@ -1,7 +1,10 @@
 #include "main.h"
 
-uint8_t flag = 0;
-
+uint8_t flag = 0;						// flag for button press
+uint8_t rxData[50];						// rxData buffer
+uint8_t rxDatai = 0;					// rxData index
+//uint8_t * rxDataP = &rxData;
+uint8_t txData[100] = "DEFAULT_VAL";	// txData buffer
 /**
   * @brief  The application entry point.
   * @retval int
@@ -13,20 +16,22 @@ int main(void)
 	TIM6Config();
 	GPIO_Config();
 	Interrupt_Config();
-	//uint8_t myChar = 'C';
-	uint8_t myArr[10] = "\nHello\n> \0";
+
+	memset(rxData,0,100);	// Empty the rxData buffer
+
 	while (1)
 	{
 		if (flag) {
-			GPIOB->BSRR |= (1<<0);		// Set
+			sprintf((char*)txData,"\r\nReceived data: %s\r\n> ",(char*)rxData); // Edit txData with rxData
+			memset(rxData,0,100);		// Clear rxData
+			rxDatai = 0;				// Reset rxData index
+			UART3_SendData(txData);
+			GPIOB->BSRR |= (1<<0);		// Set LED
 			delay_ms(1000);
-			GPIOB->BSRR |= (1<<16);		// Reset
-			UART3_SendData(myArr);
-			uint8_t rxData = UART3_GetChar();
 			flag = 0;
 		}
 		else {
-			//GPIOB->BSRR |= (1<<16);		// Reset
+			GPIOB->BSRR |= (1<<16);		// Reset LED
 		}
 	}
 }
@@ -99,5 +104,23 @@ void EXTI15_10_IRQHandler(void) {
 		flag = 1;
 		EXTI->PR |= EXTI_PR_PR13;	// Bit is cleared by writing 1 to it as described in the RM.
 	}
+}
+
+void USART3_IRQHandler (void) {
+	/*********** STEPS FOLLOWED *************
+	1. Check that interrupt is caused by RXNE
+	2. If so read the data into the array member pointed by the pointer
+	3. If interrupt is not caused by RXNE (which is not expected) run the ErrorHandler
+	****************************************/
+
+	if (USART3->ISR & USART_ISR_RXNE) {
+		rxData[rxDatai] = USART3->RDR;
+		rxDatai++;
+	}
+	else ErrorHandler();
+}
+
+void ErrorHandler (void) {
+	//nop
 }
 

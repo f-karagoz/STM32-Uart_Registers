@@ -10,6 +10,8 @@ extern "C" {
 #include "RccConfig.h"
 #include "Delay.h"
 #include "UartConfig.h"
+#include <string.h>
+#include <stdio.h>
 
 
 /**
@@ -25,11 +27,10 @@ void GPIO_Config (void);
 void Interrupt_Config (void);
 
 /**
- * @brief Interrupt handler for EXTI 15:10
+ * @brief Generic Error Handler
  *
  */
-void EXTI15_10_IRQHandler(void);
-
+void ErrorHandler (void);
 
 #ifdef __cplusplus
 }
